@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ChatOpenAI } from '@langchain/openai';
 import { extractPdf } from '../util/pdf/extract';
 import { cleanText } from '../util/pdf/cleaner';
+import { chunkText, searchChunks} from 'src/util/chunking/chunck';
 
 @Injectable()
 export class AiService {
@@ -31,6 +32,9 @@ export class AiService {
 //   }
   async getPDFText(path: string) {
     const result = await extractPdf(path);
-    return cleanText(result);
+    const text = cleanText(result);
+    const chunks = chunkText(text);
+    const relevantChunks= searchChunks(chunks, text, 3);
+    return relevantChunks.map(c => c.text).join('\n\n');
   }
 }
