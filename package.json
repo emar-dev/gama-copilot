@@ -30,6 +30,7 @@
     "langchain": "^1.2.37",
     "node-fetch": "^3.3.2",
     "openai": "^4.62.1",
+    "pdf-parse": "^2.4.5",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ChatOpenAI } from '@langchain/openai';
+import { extractPdf } from '../util/pdf/extract';
+import { cleanText } from '../util/pdf/cleaner';
 
 @Injectable()
 export class AiService {
@@ -27,4 +29,8 @@ export class AiService {
 //     const data = await response.json();
 //     return data.response;
 //   }
+  async getPDFText(path: string) {
+    const result = await extractPdf(path);
+    return cleanText(result);
+  }
 }
