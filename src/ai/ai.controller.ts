@@ -10,4 +10,8 @@ export class AiController {
     async ask(@Body('q') q: string) {
         return this.aiService.ask(q);
     }
+    @Get('pdf')
+    async getPDFText(@Body('path') path: string) {
+        return this.aiService.getPDFText(path);
+    }
 }
