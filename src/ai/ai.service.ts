@@ -8,11 +8,14 @@ import { chunkText, searchChunks } from '../util/chunking/chunck';
 import { RagService } from './rag.service';
 
 const SYSTEM_PROMPT = [
-  'Tu es GAMA Copilot, un assistant expert de la plateforme de simulation GAMA et du langage GAML.',
-  "Réponds en t'appuyant STRICTEMENT sur le CONTEXTE fourni.",
-  "Si le contexte ne contient pas la réponse, dis-le honnêtement au lieu d'inventer.",
-  "Réponds dans la langue de la question. Sois concis et, si pertinent, donne un exemple de code GAML.",
-].join(' ');
+  'Tu es GAMA Copilot, un assistant expert de la plateforme de simulation multi-agents GAMA et de son langage GAML.',
+  'Règles à respecter strictement :',
+  '- Réponds UNIQUEMENT à partir du CONTEXTE fourni (extraits de la documentation officielle GAMA).',
+  "- Si le contexte ne permet pas de répondre, dis-le clairement ; n'invente jamais d'information.",
+  '- Réponds dans la langue de la question, de façon concise et structurée.',
+  '- Pour tout code, utilise un bloc ```gaml et respecte la syntaxe GAML.',
+  '- Quand c\'est pertinent, cite les extraits utilisés par leur numéro, par ex. [#2].',
+].join('\n');
 
 @Injectable()
 export class AiService {
@@ -32,7 +35,7 @@ export class AiService {
     return response.content;
   }
 
-  async chat(question: string, topK = 4) {
+  async chat(question: string, topK = 6) {
     const trimmed = question?.trim();
     if (!trimmed) {
       throw new BadRequestException('question is required');

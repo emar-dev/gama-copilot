@@ -14,6 +14,7 @@
     "start:prod": "node dist/main",
     "index:build": "ts-node scripts/build-index.ts",
     "index:search": "ts-node scripts/smoke-search.ts",
+    "index:eval": "ts-node scripts/eval-rag.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
