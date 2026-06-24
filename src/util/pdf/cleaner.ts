@@ -1,7 +1,4 @@
-export function cleanText(text: string) {
-  return text
-    .replace(/\s+/g, ' ')        // espaces multiples
-    .replace(/\n+/g, '\n')       // lignes multiples
-    .replace(/\t/g, ' ')         // tabs
-    .trim();
+export function cleanText(text: string): string {
+  if (!text) return '';
+  return text.replace(/\s+/g, ' ').trim();
 }

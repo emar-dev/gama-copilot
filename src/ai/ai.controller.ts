@@ -1,17 +1,22 @@
-import { Body, Controller, Get, } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { AiService } from './ai.service';
 
 @Controller('ai')
 export class AiController {
-    constructor(private readonly aiService: AiService) {
+  constructor(private readonly aiService: AiService) {}
 
-    }
-    @Get()
-    async ask(@Body('q') q: string) {
-        return this.aiService.ask(q);
-    }
-    @Get('pdf')
-    async getPDFText(@Body('path') path: string) {
-        return this.aiService.getPDFText(path);
-    }
+  @Get()
+  ask(@Query('q') q: string) {
+    return this.aiService.ask(q);
+  }
+
+  @Get('pdf')
+  getPDFText(@Query('path') path: string, @Query('query') query?: string) {
+    return this.aiService.getPDFText(path, query);
+  }
+
+  @Get('chat')
+  chat(@Query('q') q: string) {
+    return this.aiService.chat(q);
+  }
 }

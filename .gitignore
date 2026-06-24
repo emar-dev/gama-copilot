@@ -49,11 +49,17 @@ lerna-debug.log*
 .temp
 .tmp
 
+# generated vector index
+/data
+
 # Runtime data
 pids
 *.pid
 *.seed
 *.pid.lock
+
+#csv
+GAMA_Copilot_Roadmap_30J.csv
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
