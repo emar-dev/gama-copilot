@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ChatOllama } from '@langchain/ollama';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
 import { resolve, sep } from 'path';
 import { extractPdf } from '../util/pdf/extract';
 import { cleanText } from '../util/pdf/cleaner';
 import { chunkText, searchChunks } from '../util/chunking/chunck';
+import { createChatModel } from '../util/llm/model';
 import { RagService } from './rag.service';
 
 const SYSTEM_PROMPT = [
@@ -19,11 +19,7 @@ const SYSTEM_PROMPT = [
 
 @Injectable()
 export class AiService {
-  private readonly model = new ChatOllama({
-    model: process.env.OLLAMA_MODEL ?? 'llama3',
-    baseUrl: process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434',
-    temperature: 0,
-  });
+  private readonly model = createChatModel();
 
   constructor(private readonly rag: RagService) {}
 
@@ -41,18 +37,14 @@ export class AiService {
       throw new BadRequestException('question is required');
     }
 
-    const hits = await this.rag.retrieve(trimmed, topK);
-    if (hits.length === 0) {
+    const { context, sources } = await this.rag.retrieveContext(trimmed, topK);
+    if (sources.length === 0) {
       return {
         answer:
           "L'index documentaire n'est pas disponible. Génère-le avec 'npm run index:build'.",
         sources: [],
       };
     }
-
-    const context = hits
-      .map((hit, i) => `[#${i + 1}] (score=${hit.score.toFixed(3)})\n${hit.text}`)
-      .join('\n\n');
 
     const response = await this.model.invoke([
       new SystemMessage(SYSTEM_PROMPT),
@@ -61,7 +53,7 @@ export class AiService {
 
     return {
       answer: response.content,
-      sources: hits.map((hit) => ({ id: hit.id, score: hit.score })),
+      sources,
     };
   }
 

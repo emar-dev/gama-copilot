@@ -31,4 +31,15 @@ export class RagService implements OnModuleInit {
     if (!this.isReady()) return [];
     return this.store.search(query, limit);
   }
+
+  /** Récupère le contexte formaté + les sources, prêt à injecter dans un prompt. */
+  async retrieveContext(
+    query: string,
+    limit = 6,
+  ): Promise<{ context: string; sources: { id: number; score: number }[] }> {
+    const hits = await this.retrieve(query, limit);
+    const context = hits.map((hit, i) => `[#${i + 1}] ${hit.text}`).join('\n\n');
+    const sources = hits.map((hit) => ({ id: hit.id, score: hit.score }));
+    return { context, sources };
+  }
 }

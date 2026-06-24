@@ -9,7 +9,13 @@ describe('AiService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiService,
-        { provide: RagService, useValue: { retrieve: jest.fn().mockResolvedValue([]) } },
+        {
+          provide: RagService,
+          useValue: {
+            retrieve: jest.fn().mockResolvedValue([]),
+            retrieveContext: jest.fn().mockResolvedValue({ context: '', sources: [] }),
+          },
+        },
       ],
     }).compile();
 
