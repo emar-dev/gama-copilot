@@ -1,9 +1,13 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { AiService } from './ai.service';
+import { GamlService } from './gaml.service';
 
 @Controller('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly gamlService: GamlService,
+  ) {}
 
   @Get()
   ask(@Query('q') q: string) {
@@ -18,5 +22,10 @@ export class AiController {
   @Get('chat')
   chat(@Query('q') q: string) {
     return this.aiService.chat(q);
+  }
+
+  @Get('generate')
+  generate(@Query('q') q: string) {
+    return this.gamlService.generate(q);
   }
 }
