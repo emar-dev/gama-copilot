@@ -7,10 +7,12 @@ import { RagService } from './ai/rag.service';
 import { GamlService } from './ai/gaml.service';
 import { ProjectController } from './project/project.controller';
 import { ProjectService } from './project/project.service';
+import { AgentController } from './ai/agent/agent.controller';
+import { AgentService } from './ai/agent/agent.service';
 
 @Module({
   imports: [],
-  controllers: [AppController, AiController, ProjectController],
-  providers: [AppService, AiService, RagService, GamlService, ProjectService],
+  controllers: [AppController, AiController, ProjectController, AgentController],
+  providers: [AppService, AiService, RagService, GamlService, ProjectService, AgentService],
 })
 export class AppModule {}
