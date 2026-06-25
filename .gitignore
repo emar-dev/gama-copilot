@@ -52,6 +52,14 @@ lerna-debug.log*
 # generated vector index
 /data
 
+# generated GAMA projects
+/workspace
+
+# smoke / eval script output
+smoke-*-out.txt
+tmp-*.txt
+tmp-*.gaml
+
 # Runtime data
 pids
 *.pid

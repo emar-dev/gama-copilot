@@ -1,5 +1,6 @@
 import { RagService } from '../src/ai/rag.service';
 import { GamlService } from '../src/ai/gaml.service';
+import { shutdownGamaServer } from '../src/util/gaml/gama-server';
 
 async function main() {
   const rag = new RagService();
@@ -16,13 +17,19 @@ async function main() {
 
   console.log('=== CODE GAML ===\n' + res.code);
   console.log('\n=== VALIDATION ===');
+  console.log('validatedBy:', res.validatedBy, '| attempts:', res.attempts);
   console.log('valid   :', res.validation.valid);
   console.log('errors  :', res.validation.errors);
   console.log('warnings:', res.validation.warnings);
   console.log(`\n(${((Date.now() - start) / 1000).toFixed(0)}s)`);
 }
 
-main().catch((err) => {
-  console.error('GAML SMOKE FAIL ->', err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error('GAML SMOKE FAIL ->', err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await shutdownGamaServer();
+    process.exit(process.exitCode ?? 0);
+  });
