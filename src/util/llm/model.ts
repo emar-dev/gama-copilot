@@ -22,7 +22,7 @@ export function createChatModel(): ChatOllama {
 /** Modèle pour l'agent ReAct : doit supporter les tool calls (qwen2.5-coder, etc.). */
 export function createAgentModel(): ChatOllama {
   const model = agentModelName();
-  if (NO_TOOLS_MODELS.has(model) || model.startsWith('llama3')) {
+  if (NO_TOOLS_MODELS.has(model)) {
     throw new Error(
       `OLLAMA_AGENT_MODEL=${model} ne supporte pas les tool calls. ` +
         'Utilise qwen2.5-coder:7b (ollama pull qwen2.5-coder:7b).',

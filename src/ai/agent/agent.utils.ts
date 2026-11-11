@@ -4,18 +4,46 @@ import { AGENT_SYSTEM_PROMPT } from '../prompts/agent';
 import { createAgentModel } from '../../util/llm/model';
 
 /** Détecte un appel d'outil renvoyé en JSON texte (qwen-coder sans tool_calls natifs). */
-export function parseTextToolCall(content: string): { name: string; arguments: Record<string, unknown> } | null {
-  const trimmed = content.trim();
-  if (!trimmed.startsWith('{')) return null;
+export function parseTextToolCall(
+  content: string,
+): { name: string; arguments: Record<string, unknown> } | null {
+  const candidate = extractJsonObject(content);
+  if (!candidate) return null;
   try {
-    const parsed = JSON.parse(trimmed) as { name?: string; arguments?: Record<string, unknown> };
-    if (parsed.name && parsed.arguments && typeof parsed.arguments === 'object') {
-      return { name: parsed.name, arguments: parsed.arguments };
+    const parsed = JSON.parse(candidate) as Record<string, unknown>;
+    const name =
+      typeof parsed.name === 'string' && parsed.name
+        ? parsed.name
+        : typeof parsed.tool === 'string' && parsed.tool
+        ? parsed.tool
+        : null;
+    const rawArgs =
+      parsed.arguments ?? parsed.args ?? parsed.parameters ?? parsed.input ?? {};
+    if (
+      name &&
+      rawArgs &&
+      typeof rawArgs === 'object' &&
+      !Array.isArray(rawArgs)
+    ) {
+      return { name, arguments: rawArgs as Record<string, unknown> };
     }
   } catch {
     /* pas du JSON */
   }
   return null;
+}
+
+function extractJsonObject(content: string): string | null {
+  const trimmed = content.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('{')) return trimmed;
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) {
+    const inner = fence[1].trim();
+    if (inner.startsWith('{')) return inner;
+  }
+  const match = trimmed.match(/\{[\s\S]*\}/);
+  return match ? match[0] : null;
 }
 
 /** Cherche un appel d'outil non exécuté (JSON texte ou tool_calls natifs). */
@@ -27,12 +55,16 @@ export function findPendingToolCall(
     if (!isAIMessage(msg)) continue;
 
     if (Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
-      const tc = msg.tool_calls[0];
-      const args =
-        tc.args && typeof tc.args === 'object' && !Array.isArray(tc.args)
-          ? (tc.args as Record<string, unknown>)
-          : {};
-      return { name: tc.name, arguments: args };
+      const tc = msg.tool_calls.find(
+        (c) => typeof c.name === 'string' && c.name.length > 0,
+      );
+      if (tc) {
+        const args =
+          tc.args && typeof tc.args === 'object' && !Array.isArray(tc.args)
+            ? (tc.args as Record<string, unknown>)
+            : {};
+        return { name: tc.name, arguments: args };
+      }
     }
 
     if (typeof msg.content === 'string') {
@@ -52,11 +84,9 @@ export function extractAgentAnswer(messages: BaseMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (!isAIMessage(msg)) continue;
-    const hasToolCalls = Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0;
     if (typeof msg.content === 'string' && msg.content.trim()) {
       const text = msg.content.trim();
-      if (hasToolCalls && isToolCallJson(text)) continue;
-      if (!hasToolCalls && isToolCallJson(text)) continue;
+      if (isToolCallJson(text)) continue;
       return text;
     }
     if (Array.isArray(msg.content)) {
@@ -93,9 +123,15 @@ export function createCopilotAgent(tools: Parameters<typeof createAgent>[0]['too
 
 /** Détecte une question documentaire (doit passer par search_docs / RAG). */
 export function isDocQuestion(message: string): boolean {
-  const m = message.toLowerCase().trim();
-  if (/\b(crée|creer|create).{0,40}\b(projet|project)\b/i.test(m)) return false;
-  if (/\b(write_file|read_file|fichier|workspace)\b/i.test(m)) return false;
+  const m = message.trim();
+  if (
+    /\b(crée|cree|creer|créer|create|écris|ecris|écrire|ecrire|write|génère|genere|générer|generer|generate|fais|make|build)\b.{0,80}\b(projet|project|modèle|modele|model|species|experiment|fichier|file|gaml|agent|simulation)\b/i.test(
+      m,
+    )
+  ) {
+    return false;
+  }
+  if (/\b(write_file|read_file|create_project|workspace)\b/i.test(m)) return false;
 
   return (
     /\b(gaml|gama|species|experiment|modèle|modele|agent|simulation|syntaxe|reflex|global|bloc)\b/i.test(

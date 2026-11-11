@@ -4,6 +4,7 @@ import { ProjectService } from '../src/project/project.service';
 import { GamlService } from '../src/ai/gaml.service';
 import { AgentService } from '../src/ai/agent/agent.service';
 import { agentModelName } from '../src/util/llm/model';
+import { shutdownGamaServer } from '../src/util/gaml/gama-server';
 
 async function main() {
   const rag = new RagService();
@@ -31,7 +32,12 @@ async function main() {
   console.log(`\n(${((Date.now() - start) / 1000).toFixed(0)}s)`);
 }
 
-main().catch((err) => {
-  console.error('AGENT SMOKE FAIL ->', err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error('AGENT SMOKE FAIL ->', err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await shutdownGamaServer();
+    process.exit(process.exitCode ?? 0);
+  });

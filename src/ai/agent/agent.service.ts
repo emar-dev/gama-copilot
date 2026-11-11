@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { ChatOllama } from '@langchain/ollama';
 import { ReactAgent } from 'langchain';
 import { AGENT_SYSTEM_PROMPT } from '../prompts/agent';
 import { createAgentModel } from '../../util/llm/model';
@@ -24,6 +25,7 @@ export class AgentService {
   private readonly logger = new Logger(AgentService.name);
   private agent?: ReactAgent;
   private tools?: CopilotTool[];
+  private synthesisModel?: ChatOllama;
 
   constructor(
     private readonly rag: RagService,
@@ -38,21 +40,25 @@ export class AgentService {
     }
 
     // Questions doc : qwen répond souvent sans appeler search_docs → RAG forcé
-    if (process.env.AGENT_FORCE_RAG !== 'false' && isDocQuestion(trimmed)) {
+    const forceRagDisabled = /^(false|0|no|off)$/i.test(
+      process.env.AGENT_FORCE_RAG ?? '',
+    );
+    if (!forceRagDisabled && isDocQuestion(trimmed)) {
       return this.runDocWithRag(trimmed);
     }
 
     const agent = this.getAgent();
-    const recursionLimit = Math.max(4, Number(process.env.AGENT_MAX_ITERATIONS ?? 12));
+    const rawLimit = Number(process.env.AGENT_MAX_ITERATIONS ?? 12);
+    const recursionLimit = Math.max(4, Number.isFinite(rawLimit) ? rawLimit : 12);
 
     this.logger.log(`Agent run (recursionLimit=${recursionLimit}): ${trimmed.slice(0, 80)}...`);
 
-    let state;
+    let state: { messages?: BaseMessage[] } | undefined;
     try {
-      state = await agent.invoke(
+      state = (await agent.invoke(
         { messages: [new HumanMessage(trimmed)] },
         { recursionLimit },
-      );
+      )) as { messages?: BaseMessage[] };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/does not support tools/i.test(msg)) {
@@ -64,19 +70,23 @@ export class AgentService {
       throw err;
     }
 
-    const messages = state.messages ?? [];
+    const messages = state?.messages ?? [];
     let answer = extractAgentAnswer(messages);
     let steps = extractToolSteps(messages);
 
     // qwen-coder émet parfois l'outil sans l'exécuter (JSON texte ou tool_calls orphelins)
-    if (steps.length === 0) {
+    // ou exécute l'outil mais ne synthétise pas la réponse finale
+    if (!answer) {
       const pending = findPendingToolCall(messages);
       if (pending) {
         const fallback = await this.runToolFallback(trimmed, pending);
         if (fallback) {
           answer = fallback.answer;
-          steps = fallback.steps;
+          if (steps.length === 0) steps = fallback.steps;
         }
+      } else if (steps.length > 0) {
+        const synth = await this.synthesiseFromSteps(trimmed, steps);
+        if (synth) answer = synth;
       }
     }
 
@@ -95,26 +105,44 @@ export class AgentService {
     if (!tool) return null;
 
     this.logger.warn(`Fallback outil: exécution manuelle de ${call.name}`);
-    const output = await (tool as { invoke: (input: unknown) => Promise<string> }).invoke(
-      call.arguments,
-    );
+    let output: string;
+    try {
+      output = await (tool as { invoke: (input: unknown) => Promise<string> }).invoke(
+        call.arguments,
+      );
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Fallback ${call.name} a échoué: ${errMsg}`);
+      return {
+        answer: `Erreur lors de l'exécution de ${call.name}: ${errMsg}`,
+        steps: [{ tool: call.name, content: `ERROR: ${errMsg}`.slice(0, 500) }],
+      };
+    }
     const steps = [{ tool: call.name, content: String(output).slice(0, 500) }];
 
-    const model = createAgentModel();
+    const answer = await this.synthesiseFromSteps(userMessage, steps);
+    return { answer: answer ?? String(output).trim(), steps };
+  }
+
+  /** Synthèse LLM à partir d'étapes d'outils déjà exécutées. */
+  private async synthesiseFromSteps(
+    userMessage: string,
+    steps: { tool: string; content: string }[],
+  ): Promise<string> {
+    const model = this.getSynthesisModel();
+    const summary = steps
+      .map((s) => `Résultat de l'outil ${s.tool} :\n${s.content}`)
+      .join('\n\n');
     const response = await model.invoke([
       new SystemMessage(AGENT_SYSTEM_PROMPT),
       new HumanMessage(
-        `Demande utilisateur : ${userMessage}\n\n` +
-          `Résultat de l'outil ${call.name} :\n${output}\n\n` +
+        `Demande utilisateur : ${userMessage}\n\n${summary}\n\n` +
           `Réponds à l'utilisateur de façon claire et concise.`,
       ),
     ]);
-    const answer =
-      typeof response.content === 'string'
-        ? response.content.trim()
-        : extractAgentAnswer([response]);
-
-    return { answer, steps };
+    return typeof response.content === 'string'
+      ? response.content.trim()
+      : extractAgentAnswer([response]);
   }
 
   /** Question documentaire : search_docs puis synthèse ancrée dans le PDF. */
@@ -132,7 +160,7 @@ export class AgentService {
     });
     const steps = [{ tool: 'search_docs', content: String(output).slice(0, 500) }];
 
-    const model = createAgentModel();
+    const model = this.getSynthesisModel();
     const response = await model.invoke([
       new SystemMessage(AGENT_SYSTEM_PROMPT),
       new HumanMessage(
@@ -147,6 +175,13 @@ export class AgentService {
         : extractAgentAnswer([response]);
 
     return { answer, steps };
+  }
+
+  private getSynthesisModel(): ChatOllama {
+    if (!this.synthesisModel) {
+      this.synthesisModel = createAgentModel();
+    }
+    return this.synthesisModel;
   }
 
   private getTools(): CopilotTool[] {
