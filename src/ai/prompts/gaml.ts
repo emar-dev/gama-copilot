@@ -136,7 +136,10 @@ export function buildGamlRepairPrompt(
   ].join('\n');
 }
 
-export function buildGamlUserPrompt(description: string, context: string): string {
+export function buildGamlUserPrompt(
+  description: string,
+  context: string,
+): string {
   const ctx = context.trim()
     ? `CONTEXTE (documentation GAMA) :\n${context}\n\n`
     : '';

@@ -1,5 +1,10 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
+import {
+  AIMessage,
+  BaseMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import { ChatOllama } from '@langchain/ollama';
 import { ReactAgent } from 'langchain';
 import { AGENT_SYSTEM_PROMPT } from '../prompts/agent';
@@ -14,6 +19,15 @@ import {
   findPendingToolCall,
   isDocQuestion,
 } from './agent.utils';
+
+/** Échange précédent d'une conversation, transmis à l'agent comme contexte. */
+export interface AgentTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const HISTORY_TURNS = 6;
+const HISTORY_CHARS = 2000;
 
 export interface AgentRunResult {
   answer: string;
@@ -33,7 +47,10 @@ export class AgentService {
   ) {}
 
   /** J23-J25 : exécute l'agent ReAct sur une demande utilisateur. */
-  async run(message: string): Promise<AgentRunResult> {
+  async run(
+    message: string,
+    history: AgentTurn[] = [],
+  ): Promise<AgentRunResult> {
     const trimmed = message?.trim();
     if (!trimmed) {
       throw new BadRequestException('message is required');
@@ -49,14 +66,29 @@ export class AgentService {
 
     const agent = this.getAgent();
     const rawLimit = Number(process.env.AGENT_MAX_ITERATIONS ?? 12);
-    const recursionLimit = Math.max(4, Number.isFinite(rawLimit) ? rawLimit : 12);
+    const recursionLimit = Math.max(
+      4,
+      Number.isFinite(rawLimit) ? rawLimit : 12,
+    );
 
-    this.logger.log(`Agent run (recursionLimit=${recursionLimit}): ${trimmed.slice(0, 80)}...`);
+    this.logger.log(
+      `Agent run (recursionLimit=${recursionLimit}): ${trimmed.slice(0, 80)}...`,
+    );
+
+    // Contexte : derniers échanges de la conversation, tronqués pour rester dans la fenêtre du modèle.
+    const historyMessages: BaseMessage[] = history
+      .slice(-HISTORY_TURNS)
+      .map((turn) => {
+        const content = turn.content.slice(0, HISTORY_CHARS);
+        return turn.role === 'user'
+          ? new HumanMessage(content)
+          : new AIMessage(content);
+      });
 
     let state: { messages?: BaseMessage[] } | undefined;
     try {
       state = (await agent.invoke(
-        { messages: [new HumanMessage(trimmed)] },
+        { messages: [...historyMessages, new HumanMessage(trimmed)] },
         { recursionLimit },
       )) as { messages?: BaseMessage[] };
     } catch (err) {
@@ -70,7 +102,8 @@ export class AgentService {
       throw err;
     }
 
-    const messages = state?.messages ?? [];
+    // Seuls les messages produits pour cette demande comptent (pas la réponse d'un échange précédent).
+    const messages = (state?.messages ?? []).slice(historyMessages.length);
     let answer = extractAgentAnswer(messages);
     let steps = extractToolSteps(messages);
 
@@ -107,9 +140,9 @@ export class AgentService {
     this.logger.warn(`Fallback outil: exécution manuelle de ${call.name}`);
     let output: string;
     try {
-      output = await (tool as { invoke: (input: unknown) => Promise<string> }).invoke(
-        call.arguments,
-      );
+      output = await (
+        tool as { invoke: (input: unknown) => Promise<string> }
+      ).invoke(call.arguments);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Fallback ${call.name} a échoué: ${errMsg}`);
@@ -154,11 +187,15 @@ export class AgentService {
       throw new BadRequestException('outil search_docs indisponible');
     }
 
-    const output = await (searchTool as { invoke: (input: unknown) => Promise<string> }).invoke({
+    const output = await (
+      searchTool as { invoke: (input: unknown) => Promise<string> }
+    ).invoke({
       query: message,
       limit: 6,
     });
-    const steps = [{ tool: 'search_docs', content: String(output).slice(0, 500) }];
+    const steps = [
+      { tool: 'search_docs', content: String(output).slice(0, 500) },
+    ];
 
     const model = this.getSynthesisModel();
     const response = await model.invoke([

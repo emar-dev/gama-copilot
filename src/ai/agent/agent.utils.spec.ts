@@ -1,5 +1,11 @@
 import { BaseMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
-import { extractAgentAnswer, extractToolSteps, parseTextToolCall, findPendingToolCall, isDocQuestion } from './agent.utils';
+import {
+  extractAgentAnswer,
+  extractToolSteps,
+  parseTextToolCall,
+  findPendingToolCall,
+  isDocQuestion,
+} from './agent.utils';
 
 describe('agent.utils', () => {
   it('extractAgentAnswer retourne le dernier message AI', () => {
@@ -15,12 +21,14 @@ describe('agent.utils', () => {
     expect(extractAgentAnswer([])).toBe('');
   });
 
-  it('extractAgentAnswer ignore un JSON d\'appel d\'outil', () => {
+  it("extractAgentAnswer ignore un JSON d'appel d'outil", () => {
     const messages: BaseMessage[] = [
       new AIMessage('{"name":"search_docs","arguments":{"query":"species"}}'),
-      new AIMessage('Une species est un type d\'agent.'),
+      new AIMessage("Une species est un type d'agent."),
     ];
-    expect(extractAgentAnswer(messages)).toBe("Une species est un type d'agent.");
+    expect(extractAgentAnswer(messages)).toBe(
+      "Une species est un type d'agent.",
+    );
   });
 
   it('parseTextToolCall détecte un JSON outil', () => {
@@ -54,13 +62,23 @@ describe('agent.utils', () => {
   it('isDocQuestion détecte les questions GAML', () => {
     expect(isDocQuestion("Qu'est-ce qu'une species en GAML ?")).toBe(true);
     expect(isDocQuestion('À quoi sert un bloc experiment ?')).toBe(true);
-    expect(isDocQuestion('Crée un projet DemoAgents avec des agents')).toBe(false);
+    expect(isDocQuestion('Crée un projet DemoAgents avec des agents')).toBe(
+      false,
+    );
   });
 
   it('extractToolSteps liste les ToolMessage', () => {
     const messages: BaseMessage[] = [
-      new ToolMessage({ content: '{"found":2}', name: 'search_docs', tool_call_id: 'a' }),
-      new ToolMessage({ content: 'done', name: 'write_file', tool_call_id: 'b' }),
+      new ToolMessage({
+        content: '{"found":2}',
+        name: 'search_docs',
+        tool_call_id: 'a',
+      }),
+      new ToolMessage({
+        content: 'done',
+        name: 'write_file',
+        tool_call_id: 'b',
+      }),
     ];
     expect(extractToolSteps(messages)).toEqual([
       { tool: 'search_docs', content: '{"found":2}' },

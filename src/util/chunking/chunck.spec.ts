@@ -14,7 +14,10 @@ describe('chunkText', () => {
   it('never produces a chunk larger than the requested size', () => {
     const size = 200;
     const longWord = 'a'.repeat(5000);
-    const sentences = Array.from({ length: 50 }, (_, i) => `Sentence number ${i}.`).join(' ');
+    const sentences = Array.from(
+      { length: 50 },
+      (_, i) => `Sentence number ${i}.`,
+    ).join(' ');
     const text = `${longWord} ${sentences}`;
 
     const chunks = chunkText(text, size, 20);
@@ -26,7 +29,9 @@ describe('chunkText', () => {
   });
 
   it('assigns sequential ids', () => {
-    const text = Array.from({ length: 30 }, (_, i) => `Paragraph ${i}.`).join('\n\n');
+    const text = Array.from({ length: 30 }, (_, i) => `Paragraph ${i}.`).join(
+      '\n\n',
+    );
     const chunks = chunkText(text, 50, 10);
     chunks.forEach((chunk, index) => expect(chunk.id).toBe(index));
   });

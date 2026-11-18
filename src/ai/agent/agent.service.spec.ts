@@ -21,7 +21,10 @@ describe('AgentService', () => {
       providers: [
         AgentService,
         { provide: RagService, useValue: { retrieveContext: jest.fn() } },
-        { provide: ProjectService, useValue: { readFile: jest.fn(), writeFile: jest.fn() } },
+        {
+          provide: ProjectService,
+          useValue: { readFile: jest.fn(), writeFile: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -36,16 +39,22 @@ describe('AgentService', () => {
     await expect(service.run('')).rejects.toThrow(BadRequestException);
   });
 
-  it('retourne answer et steps depuis l\'agent', async () => {
+  it("retourne answer et steps depuis l'agent", async () => {
     mockInvoke.mockResolvedValue({
       messages: [
         new HumanMessage('test'),
-        new ToolMessage({ content: '{"found":1}', name: 'search_docs', tool_call_id: '1' }),
+        new ToolMessage({
+          content: '{"found":1}',
+          name: 'search_docs',
+          tool_call_id: '1',
+        }),
         new AIMessage('Voici la réponse.'),
       ],
     });
 
-    const res = await service.run('Ajoute des voitures bleues sur une route avec create_project');
+    const res = await service.run(
+      'Ajoute des voitures bleues sur une route avec create_project',
+    );
     expect(res.answer).toBe('Voici la réponse.');
     expect(res.steps).toHaveLength(1);
     expect(res.steps[0].tool).toBe('search_docs');

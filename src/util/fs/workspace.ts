@@ -1,8 +1,35 @@
+import { AsyncLocalStorage } from 'async_hooks';
 import { resolve, sep } from 'path';
 
-/** Racine du workspace où sont créés les projets GAMA (configurable). */
-export function workspaceRoot(): string {
+/**
+ * Espace de travail courant. Dans une requête HTTP authentifiée, WorkspaceInterceptor
+ * le fixe au dossier de l'utilisateur (workspace/users/<id>) : le service de projets
+ * et les outils de l'agent n'ont alors accès qu'aux fichiers de cet utilisateur.
+ * Hors requête (scripts, tests de fumée), c'est la racine du workspace.
+ */
+const currentWorkspace = new AsyncLocalStorage<string>();
+
+/** Racine globale du workspace (configurable via WORKSPACE_DIR). */
+export function baseWorkspaceRoot(): string {
   return resolve(process.cwd(), process.env.WORKSPACE_DIR ?? 'workspace');
+}
+
+/** Dossier réservé à un utilisateur, à l'intérieur du workspace global. */
+export function userWorkspaceRoot(userId: string): string {
+  if (!/^[A-Za-z0-9-]+$/.test(userId)) {
+    throw new Error('Identifiant utilisateur invalide');
+  }
+  return resolve(baseWorkspaceRoot(), 'users', userId);
+}
+
+/** Exécute fn (et tout ce qu'elle déclenche, même asynchrone) dans l'espace donné. */
+export function runInWorkspace<T>(root: string, fn: () => T): T {
+  return currentWorkspace.run(root, fn);
+}
+
+/** Racine du workspace où sont créés les projets GAMA : celle de l'utilisateur courant s'il y en a un. */
+export function workspaceRoot(): string {
+  return currentWorkspace.getStore() ?? baseWorkspaceRoot();
 }
 
 /**

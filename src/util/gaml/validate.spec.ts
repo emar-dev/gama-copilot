@@ -37,7 +37,9 @@ experiment Exp type: gui {
   });
 
   it('does not count braces inside strings or comments', () => {
-    const res = validateGaml('model T // accolade } ici\nglobal { string s <- "} {"; }');
+    const res = validateGaml(
+      'model T // accolade } ici\nglobal { string s <- "} {"; }',
+    );
     expect(res.valid).toBe(true);
   });
 

@@ -11,7 +11,7 @@ export class AiController {
 
   @Get()
   ask(@Query('q') q: string) {
-    console.log("ask", q);
+    console.log('ask', q);
     return this.aiService.ask(q);
   }
 

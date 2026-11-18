@@ -1,4 +1,4 @@
 export interface Chunk {
-    id: number;
-    text: string;
+  id: number;
+  text: string;
 }

@@ -1,5 +1,14 @@
-import { BadRequestException, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { SystemMessage, HumanMessage, BaseMessage } from '@langchain/core/messages';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+} from '@nestjs/common';
+import {
+  SystemMessage,
+  HumanMessage,
+  BaseMessage,
+} from '@langchain/core/messages';
 import { createChatModel } from '../util/llm/model';
 import { RagService } from './rag.service';
 import {
@@ -10,7 +19,11 @@ import {
 import { extractGaml } from '../util/gaml/extract';
 import { normalizeGaml } from '../util/gaml/normalize';
 import { validateGaml, GamlValidation } from '../util/gaml/validate';
-import { gamaServer, validateWithGamaServer, shutdownGamaServer } from '../util/gaml/gama-server';
+import {
+  gamaServer,
+  validateWithGamaServer,
+  shutdownGamaServer,
+} from '../util/gaml/gama-server';
 
 export interface GamlGeneration {
   code: string;
@@ -38,7 +51,8 @@ export class GamlService implements OnModuleDestroy {
     }
 
     const { context, sources } = await this.rag.retrieveContext(trimmed, topK);
-    const useGama = process.env.GAMA_VALIDATE !== 'false' && gamaServer.isAvailable();
+    const useGama =
+      process.env.GAMA_VALIDATE !== 'false' && gamaServer.isAvailable();
     const maxAttempts = Math.max(1, Number(process.env.GAML_MAX_ATTEMPTS ?? 2));
 
     let code = '';
@@ -58,12 +72,20 @@ export class GamlService implements OnModuleDestroy {
 
       const response = await this.model.invoke(messages);
       const raw =
-        typeof response.content === 'string' ? response.content : String(response.content);
+        typeof response.content === 'string'
+          ? response.content
+          : String(response.content);
       code = normalizeGaml(extractGaml(raw));
       heuristic = validateGaml(code);
 
       if (!useGama) {
-        return { code, validation: heuristic, validatedBy: 'heuristic', attempts: attempt, sources };
+        return {
+          code,
+          validation: heuristic,
+          validatedBy: 'heuristic',
+          attempts: attempt,
+          sources,
+        };
       }
 
       const gama = await validateWithGamaServer(code);

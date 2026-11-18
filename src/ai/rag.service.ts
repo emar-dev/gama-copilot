@@ -38,7 +38,9 @@ export class RagService implements OnModuleInit {
     limit = 6,
   ): Promise<{ context: string; sources: { id: number; score: number }[] }> {
     const hits = await this.retrieve(query, limit);
-    const context = hits.map((hit, i) => `[#${i + 1}] ${hit.text}`).join('\n\n');
+    const context = hits
+      .map((hit, i) => `[#${i + 1}] ${hit.text}`)
+      .join('\n\n');
     const sources = hits.map((hit) => ({ id: hit.id, score: hit.score }));
     return { context, sources };
   }

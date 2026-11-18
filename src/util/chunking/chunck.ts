@@ -49,10 +49,21 @@ export function chunkText(text: string, size = 1500, overlap = 150): Chunk[] {
 }
 
 function extractKeywords(query: string): string[] {
-  return [...new Set(query.toLowerCase().split(/\s+/).filter((w) => w.length > 2))];
+  return [
+    ...new Set(
+      query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 2),
+    ),
+  ];
 }
 
-export function searchChunks(chunks: Chunk[], query: string, limit = 3): Chunk[] {
+export function searchChunks(
+  chunks: Chunk[],
+  query: string,
+  limit = 3,
+): Chunk[] {
   if (chunks.length === 0) return [];
 
   const keywords = extractKeywords(query);

@@ -14,7 +14,7 @@ const SYSTEM_PROMPT = [
   "- Si le contexte ne permet pas de répondre, dis-le clairement ; n'invente jamais d'information.",
   '- Réponds dans la langue de la question, de façon concise et structurée.',
   '- Pour tout code, utilise un bloc ```gaml et respecte la syntaxe GAML.',
-  '- Quand c\'est pertinent, cite les extraits utilisés par leur numéro, par ex. [#2].',
+  "- Quand c'est pertinent, cite les extraits utilisés par leur numéro, par ex. [#2].",
 ].join('\n');
 
 @Injectable()

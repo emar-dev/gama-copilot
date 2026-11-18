@@ -15,10 +15,14 @@ export function parseTextToolCall(
       typeof parsed.name === 'string' && parsed.name
         ? parsed.name
         : typeof parsed.tool === 'string' && parsed.tool
-        ? parsed.tool
-        : null;
+          ? parsed.tool
+          : null;
     const rawArgs =
-      parsed.arguments ?? parsed.args ?? parsed.parameters ?? parsed.input ?? {};
+      parsed.arguments ??
+      parsed.args ??
+      parsed.parameters ??
+      parsed.input ??
+      {};
     if (
       name &&
       rawArgs &&
@@ -102,18 +106,25 @@ export function extractAgentAnswer(messages: BaseMessage[]): string {
 }
 
 /** Liste les appels d'outils exécutés pendant l'agent (pour audit / debug). */
-export function extractToolSteps(messages: BaseMessage[]): { tool: string; content: string }[] {
+export function extractToolSteps(
+  messages: BaseMessage[],
+): { tool: string; content: string }[] {
   const steps: { tool: string; content: string }[] = [];
   for (const msg of messages) {
     if (msg.getType() !== 'tool') continue;
     const name = (msg as { name?: string }).name ?? 'unknown';
-    const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+    const content =
+      typeof msg.content === 'string'
+        ? msg.content
+        : JSON.stringify(msg.content);
     steps.push({ tool: name, content: content.slice(0, 500) });
   }
   return steps;
 }
 
-export function createCopilotAgent(tools: Parameters<typeof createAgent>[0]['tools']): ReactAgent {
+export function createCopilotAgent(
+  tools: Parameters<typeof createAgent>[0]['tools'],
+): ReactAgent {
   return createAgent({
     model: createAgentModel(),
     tools,
@@ -131,7 +142,8 @@ export function isDocQuestion(message: string): boolean {
   ) {
     return false;
   }
-  if (/\b(write_file|read_file|create_project|workspace)\b/i.test(m)) return false;
+  if (/\b(write_file|read_file|create_project|workspace)\b/i.test(m))
+    return false;
 
   return (
     /\b(gaml|gama|species|experiment|modèle|modele|agent|simulation|syntaxe|reflex|global|bloc)\b/i.test(

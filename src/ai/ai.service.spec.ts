@@ -13,7 +13,9 @@ describe('AiService', () => {
           provide: RagService,
           useValue: {
             retrieve: jest.fn().mockResolvedValue([]),
-            retrieveContext: jest.fn().mockResolvedValue({ context: '', sources: [] }),
+            retrieveContext: jest
+              .fn()
+              .mockResolvedValue({ context: '', sources: [] }),
           },
         },
       ],

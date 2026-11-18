@@ -12,7 +12,10 @@ export interface CopilotToolDeps {
 export function createCopilotTools(deps: CopilotToolDeps) {
   const searchDocs = tool(
     async ({ query, limit }) => {
-      const { context, sources } = await deps.rag.retrieveContext(query, limit ?? 6);
+      const { context, sources } = await deps.rag.retrieveContext(
+        query,
+        limit ?? 6,
+      );
       return JSON.stringify({
         found: sources.length,
         sources,
@@ -26,7 +29,13 @@ export function createCopilotTools(deps: CopilotToolDeps) {
         'À utiliser pour les questions sur GAML, GAMA, la syntaxe ou les concepts.',
       schema: z.object({
         query: z.string().describe('Question ou mots-clés à rechercher'),
-        limit: z.number().int().min(1).max(12).optional().describe('Nombre de passages (défaut 6)'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(12)
+          .optional()
+          .describe('Nombre de passages (défaut 6)'),
       }),
     },
   );
@@ -39,10 +48,12 @@ export function createCopilotTools(deps: CopilotToolDeps) {
     {
       name: 'read_file',
       description:
-        'Lit le contenu d\'un fichier dans le workspace GAMA. ' +
+        "Lit le contenu d'un fichier dans le workspace GAMA. " +
         'Exemple de chemin : MonProjet/models/main.gaml',
       schema: z.object({
-        path: z.string().describe('Chemin relatif du fichier dans le workspace'),
+        path: z
+          .string()
+          .describe('Chemin relatif du fichier dans le workspace'),
       }),
     },
   );
@@ -83,7 +94,9 @@ export function createCopilotTools(deps: CopilotToolDeps) {
       schema: z.object({
         name: z
           .string()
-          .describe('Nom du projet (lettres/chiffres/underscore, ex. SimpleMovement)'),
+          .describe(
+            'Nom du projet (lettres/chiffres/underscore, ex. SimpleMovement)',
+          ),
         description: z
           .string()
           .describe('Description du modèle de simulation à générer en GAML'),

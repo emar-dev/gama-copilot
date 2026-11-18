@@ -42,7 +42,12 @@ function stripNoise(code: string): string {
   return out;
 }
 
-function checkBalanced(code: string, open: string, close: string, label: string): string | null {
+function checkBalanced(
+  code: string,
+  open: string,
+  close: string,
+  label: string,
+): string | null {
   let depth = 0;
   for (const ch of code) {
     if (ch === open) depth++;
@@ -79,7 +84,9 @@ export function validateGaml(code: string): GamlValidation {
   }
 
   if (!/^\s*model\s+\w+/m.test(clean)) {
-    errors.push("En-tête manquant : un modèle doit commencer par 'model <Nom>'");
+    errors.push(
+      "En-tête manquant : un modèle doit commencer par 'model <Nom>'",
+    );
   }
   if (!/\bglobal\s*\{/.test(clean)) {
     warnings.push("Bloc 'global { }' absent");
@@ -88,7 +95,9 @@ export function validateGaml(code: string): GamlValidation {
     warnings.push("Aucune 'species' déclarée");
   }
   if (!/\bexperiment\s+\w+/.test(clean)) {
-    warnings.push("Bloc 'experiment' absent (nécessaire pour exécuter le modèle)");
+    warnings.push(
+      "Bloc 'experiment' absent (nécessaire pour exécuter le modèle)",
+    );
   }
 
   return { valid: errors.length === 0, errors, warnings };

@@ -4,7 +4,13 @@ const OLLAMA_BASE = process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434';
 const OLLAMA_KEEP = process.env.OLLAMA_KEEP_ALIVE ?? '30m';
 
 /** Modèles connus pour ne PAS supporter les tool calls côté Ollama. */
-const NO_TOOLS_MODELS = new Set(['llama3', 'llama3:latest', 'llama3:8b', 'llama2', 'mistral']);
+const NO_TOOLS_MODELS = new Set([
+  'llama3',
+  'llama3:latest',
+  'llama3:8b',
+  'llama2',
+  'mistral',
+]);
 
 export function agentModelName(): string {
   return process.env.OLLAMA_AGENT_MODEL ?? 'qwen2.5-coder:7b';

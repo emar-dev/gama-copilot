@@ -68,7 +68,10 @@ function fixCreateCount(line: string): string {
 
 function fixAskDie(line: string): string {
   // `ask cible die;` -> `ask cible { do die; }`
-  return line.replace(/\bask\s+([A-Za-z_][\w.]*)\s+die\s*;/g, 'ask $1 { do die; }');
+  return line.replace(
+    /\bask\s+([A-Za-z_][\w.]*)\s+die\s*;/g,
+    'ask $1 { do die; }',
+  );
 }
 
 export function normalizeGaml(code: string): string {

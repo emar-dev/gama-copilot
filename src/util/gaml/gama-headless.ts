@@ -1,5 +1,12 @@
 import { execFile } from 'child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { dirname, join } from 'path';
 import { promisify } from 'util';
@@ -16,7 +23,8 @@ export interface GamaValidationResult {
 /** Chemin du lanceur gama-headless (configurable via GAMA_HEADLESS). */
 export function gamaHeadlessPath(): string | null {
   const configured = process.env.GAMA_HEADLESS;
-  const candidate = configured ?? 'C:\\Program Files\\Gama\\headless\\gama-headless.bat';
+  const candidate =
+    configured ?? 'C:\\Program Files\\Gama\\headless\\gama-headless.bat';
   return existsSync(candidate) ? candidate : null;
 }
 
@@ -52,7 +60,12 @@ function cleanupNewWorkDirs(dir: string, before: Set<string>): void {
 function summarize(stdout: string): string {
   const lines = stdout
     .split(/\r?\n/)
-    .filter((l) => /compiled|error|warning/i.test(l) && !l.includes('-D') && !l.includes('--add-'));
+    .filter(
+      (l) =>
+        /compiled|error|warning/i.test(l) &&
+        !l.includes('-D') &&
+        !l.includes('--add-'),
+    );
   return lines.slice(-8).join('\n').trim() || stdout.slice(-400).trim();
 }
 
@@ -66,12 +79,20 @@ export async function validateWithGama(
 ): Promise<GamaValidationResult> {
   const bat = gamaHeadlessPath();
   if (!bat) {
-    return { available: false, compiled: false, output: 'GAMA headless introuvable' };
+    return {
+      available: false,
+      compiled: false,
+      output: 'GAMA headless introuvable',
+    };
   }
 
   const experiment = extractExperimentName(code);
   if (!experiment) {
-    return { available: true, compiled: false, output: "Aucun 'experiment' trouvé dans le modèle" };
+    return {
+      available: true,
+      compiled: false,
+      output: "Aucun 'experiment' trouvé dans le modèle",
+    };
   }
 
   const headlessDir = dirname(bat);
@@ -84,12 +105,16 @@ export async function validateWithGama(
   let stdout = '';
   let exitCode = 0;
   try {
-    const res = await pExecFile('cmd.exe', ['/c', bat, '-xml', experiment, modelPath, outXml], {
-      cwd: headlessDir,
-      timeout: timeoutMs,
-      maxBuffer: 10 * 1024 * 1024,
-      windowsHide: true,
-    });
+    const res = await pExecFile(
+      'cmd.exe',
+      ['/c', bat, '-xml', experiment, modelPath, outXml],
+      {
+        cwd: headlessDir,
+        timeout: timeoutMs,
+        maxBuffer: 10 * 1024 * 1024,
+        windowsHide: true,
+      },
+    );
     stdout = res.stdout ?? '';
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string; code?: number };

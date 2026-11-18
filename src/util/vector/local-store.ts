@@ -2,7 +2,11 @@ import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import type { Embeddings } from '@langchain/core/embeddings';
 import { Chunk } from '../../types/chunks/chunks';
-import { SearchResult, VectorRecord, VectorStore } from '../../types/vector/vector';
+import {
+  SearchResult,
+  VectorRecord,
+  VectorStore,
+} from '../../types/vector/vector';
 
 export interface BuildOptions {
   batchSize?: number;
@@ -57,9 +61,17 @@ export class LocalVectorStore implements VectorStore {
    * Reprend automatiquement : les chunks déjà indexés (même id) sont ignorés.
    */
   async build(chunks: Chunk[], options: BuildOptions = {}): Promise<void> {
-    const { batchSize = 16, checkpointEvery = 64, onProgress, resume = true, embedMaxChars } = options;
+    const {
+      batchSize = 16,
+      checkpointEvery = 64,
+      onProgress,
+      resume = true,
+      embedMaxChars,
+    } = options;
     const forEmbed = (text: string) =>
-      embedMaxChars && text.length > embedMaxChars ? text.slice(0, embedMaxChars) : text;
+      embedMaxChars && text.length > embedMaxChars
+        ? text.slice(0, embedMaxChars)
+        : text;
 
     if (chunks.length === 0) {
       this.records = [];
@@ -80,10 +92,16 @@ export class LocalVectorStore implements VectorStore {
     let sinceCheckpoint = 0;
     for (let i = 0; i < pending.length; i += batchSize) {
       const batch = pending.slice(i, i + batchSize);
-      const vectors = await this.embedBatchResilient(batch.map((c) => forEmbed(c.text)));
+      const vectors = await this.embedBatchResilient(
+        batch.map((c) => forEmbed(c.text)),
+      );
 
       batch.forEach((chunk, j) => {
-        this.records.push({ id: chunk.id, text: chunk.text, embedding: vectors[j] });
+        this.records.push({
+          id: chunk.id,
+          text: chunk.text,
+          embedding: vectors[j],
+        });
       });
 
       sinceCheckpoint += batch.length;
@@ -101,7 +119,11 @@ export class LocalVectorStore implements VectorStore {
   async load(): Promise<boolean> {
     try {
       const raw = await readFile(this.indexPath, 'utf-8');
-      const parsed = JSON.parse(raw) as { model?: string; dim?: number; records?: VectorRecord[] };
+      const parsed = JSON.parse(raw) as {
+        model?: string;
+        dim?: number;
+        records?: VectorRecord[];
+      };
       this.records = parsed.records ?? [];
       this.indexModel = parsed.model;
       this.dim = parsed.dim ?? this.records[0]?.embedding.length ?? 0;
@@ -167,7 +189,11 @@ export class LocalVectorStore implements VectorStore {
     await mkdir(dirname(this.indexPath), { recursive: true });
     await writeFile(
       this.indexPath,
-      JSON.stringify({ model: this.indexModel, dim: this.dim, records: this.records }),
+      JSON.stringify({
+        model: this.indexModel,
+        dim: this.dim,
+        records: this.records,
+      }),
       'utf-8',
     );
   }

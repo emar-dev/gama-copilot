@@ -11,7 +11,8 @@ describe('extractExperimentName', () => {
   });
 
   it('returns the first experiment when several exist', () => {
-    const code = 'experiment First type: gui {}\nexperiment Second type: batch {}';
+    const code =
+      'experiment First type: gui {}\nexperiment Second type: batch {}';
     expect(extractExperimentName(code)).toBe('First');
   });
 });

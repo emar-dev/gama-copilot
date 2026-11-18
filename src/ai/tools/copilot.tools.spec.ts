@@ -11,13 +11,21 @@ describe('createCopilotTools', () => {
   } as unknown as RagService;
 
   const project = {
-    readFile: jest.fn().mockResolvedValue({ path: 'workspace/A/models/m.gaml', content: 'model A' }),
-    writeFile: jest.fn().mockResolvedValue({ path: 'workspace/A/models/m.gaml' }),
+    readFile: jest.fn().mockResolvedValue({
+      path: 'workspace/A/models/m.gaml',
+      content: 'model A',
+    }),
+    writeFile: jest
+      .fn()
+      .mockResolvedValue({ path: 'workspace/A/models/m.gaml' }),
     createProject: jest.fn().mockResolvedValue({
       project: 'A',
       path: 'workspace/A',
       files: ['workspace/A/models/main.gaml'],
-      model: { file: 'models/main.gaml', validation: { valid: true, errors: [], warnings: [] } },
+      model: {
+        file: 'models/main.gaml',
+        validation: { valid: true, errors: [], warnings: [] },
+      },
       sources: [],
     }),
   } as unknown as ProjectService;
@@ -26,7 +34,12 @@ describe('createCopilotTools', () => {
 
   it('expose les 4 outils attendus', () => {
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(['create_project', 'read_file', 'search_docs', 'write_file']);
+    expect(names).toEqual([
+      'create_project',
+      'read_file',
+      'search_docs',
+      'write_file',
+    ]);
   });
 
   it('search_docs appelle RagService', async () => {
@@ -45,6 +58,9 @@ describe('createCopilotTools', () => {
   it('write_file appelle ProjectService', async () => {
     const t = tools.find((x) => x.name === 'write_file')!;
     await t.invoke({ path: 'A/models/m.gaml', content: 'model B' });
-    expect(project.writeFile).toHaveBeenCalledWith('A/models/m.gaml', 'model B');
+    expect(project.writeFile).toHaveBeenCalledWith(
+      'A/models/m.gaml',
+      'model B',
+    );
   });
 });

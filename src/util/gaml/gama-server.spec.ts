@@ -15,7 +15,10 @@ describe('parseErrors', () => {
   });
 
   it('extrait .message des objets erreur', () => {
-    const content = [{ message: 'erreur A', line: 12 }, { message: 'erreur B' }];
+    const content = [
+      { message: 'erreur A', line: 12 },
+      { message: 'erreur B' },
+    ];
     expect(parseErrors(content)).toEqual(['erreur A', 'erreur B']);
   });
 

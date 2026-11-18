@@ -22,7 +22,9 @@ export function parseErrors(content: unknown): string[] {
   if (typeof content === 'object') {
     const obj = content as Record<string, unknown>;
     if (Array.isArray(obj.errors)) {
-      return obj.errors.map((e) => (typeof e === 'string' ? e : extractMessage(e)));
+      return obj.errors.map((e) =>
+        typeof e === 'string' ? e : extractMessage(e),
+      );
     }
     if (typeof obj.message === 'string') return [obj.message];
     return [JSON.stringify(obj)];
@@ -68,9 +70,16 @@ export class GamaServerClient {
   }
 
   /** Valide un modèle GAML. Les appels concurrents sont sérialisés. */
-  async validate(code: string, timeoutMs = 60_000): Promise<GamaServerValidation> {
+  async validate(
+    code: string,
+    timeoutMs = 60_000,
+  ): Promise<GamaServerValidation> {
     if (!this.isAvailable()) {
-      return { available: false, compiled: false, errors: ['GAMA headless introuvable'] };
+      return {
+        available: false,
+        compiled: false,
+        errors: ['GAMA headless introuvable'],
+      };
     }
     const run = this.chain.then(() => this.validateOnce(code, timeoutMs));
     // On garde la chaîne vivante même en cas d'erreur, sans propager le rejet.
@@ -78,21 +87,34 @@ export class GamaServerClient {
     return run;
   }
 
-  private async validateOnce(code: string, timeoutMs: number): Promise<GamaServerValidation> {
+  private async validateOnce(
+    code: string,
+    timeoutMs: number,
+  ): Promise<GamaServerValidation> {
     try {
       await this.ensureReady();
     } catch (err) {
-      return { available: true, compiled: false, errors: [`gama-server indisponible: ${(err as Error).message}`] };
+      return {
+        available: true,
+        compiled: false,
+        errors: [`gama-server indisponible: ${(err as Error).message}`],
+      };
     }
 
     return new Promise<GamaServerValidation>((resolve) => {
       const timer = setTimeout(() => {
         this.pending = undefined;
-        resolve({ available: true, compiled: false, errors: ['gama-server: timeout de validation'] });
+        resolve({
+          available: true,
+          compiled: false,
+          errors: ['gama-server: timeout de validation'],
+        });
       }, timeoutMs);
 
       this.pending = { resolve, timer };
-      this.ws!.send(JSON.stringify({ type: 'validate', expr: code, syntax: false }));
+      this.ws!.send(
+        JSON.stringify({ type: 'validate', expr: code, syntax: false }),
+      );
     });
   }
 
@@ -147,7 +169,11 @@ export class GamaServerClient {
       };
       const onExit = (codeNum: number | null) => {
         cleanup();
-        reject(new Error(`gama-server s'est arrêté (code ${codeNum ?? '?'}) avant d'être prêt`));
+        reject(
+          new Error(
+            `gama-server s'est arrêté (code ${codeNum ?? '?'}) avant d'être prêt`,
+          ),
+        );
       };
       const cleanup = () => {
         clearTimeout(timer);
@@ -203,8 +229,15 @@ export class GamaServerClient {
     if (!this.pending) return;
     if (msg.type === 'CommandExecutedSuccessfully') {
       this.resolvePending({ available: true, compiled: true, errors: [] });
-    } else if (msg.type === 'UnableToExecuteRequest' || msg.type === 'GamaServerError') {
-      this.resolvePending({ available: true, compiled: false, errors: parseErrors(msg.content) });
+    } else if (
+      msg.type === 'UnableToExecuteRequest' ||
+      msg.type === 'GamaServerError'
+    ) {
+      this.resolvePending({
+        available: true,
+        compiled: false,
+        errors: parseErrors(msg.content),
+      });
     }
   }
 
@@ -234,7 +267,9 @@ export class GamaServerClient {
     this.connected = false;
     if (this.startedHere && this.proc && this.proc.pid) {
       try {
-        spawn('taskkill', ['/pid', String(this.proc.pid), '/t', '/f'], { windowsHide: true });
+        spawn('taskkill', ['/pid', String(this.proc.pid), '/t', '/f'], {
+          windowsHide: true,
+        });
       } catch {
         this.proc.kill('SIGKILL');
       }
@@ -266,7 +301,9 @@ function installExitHook(): void {
 }
 installExitHook();
 
-export function validateWithGamaServer(code: string): Promise<GamaServerValidation> {
+export function validateWithGamaServer(
+  code: string,
+): Promise<GamaServerValidation> {
   return gamaServer.validate(code);
 }
 

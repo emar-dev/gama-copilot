@@ -63,7 +63,10 @@ describe('ProjectService', () => {
   it('creates a full project with a generated model (J20)', async () => {
     const res = await service.createProject('Sim', 'un modèle de test');
     expect(gamlMock.generate).toHaveBeenCalledWith('un modèle de test');
-    const model = await readFile(join(dir, 'Sim', 'models', 'Sim.gaml'), 'utf-8');
+    const model = await readFile(
+      join(dir, 'Sim', 'models', 'Sim.gaml'),
+      'utf-8',
+    );
     expect(model).toContain('model Demo');
     expect(res.model.validation.valid).toBe(true);
     expect(res.files).toContain('Sim/models/Sim.gaml');

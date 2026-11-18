@@ -27,7 +27,10 @@ describe('AgentController', () => {
   });
 
   it('GET /agent?q= délègue à AgentService.run', async () => {
-    run.mockResolvedValue({ answer: 'doc', steps: [{ tool: 'search_docs', content: '{}' }] });
+    run.mockResolvedValue({
+      answer: 'doc',
+      steps: [{ tool: 'search_docs', content: '{}' }],
+    });
     await controller.runGet('question GAML');
     expect(run).toHaveBeenCalledWith('question GAML');
   });
